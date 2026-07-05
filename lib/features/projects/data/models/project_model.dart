@@ -1,4 +1,5 @@
 import 'package:uuid/uuid.dart';
+import '../../../../core/utils/app_formatters.dart';
 
 enum ProjectStatus { active, onHold, completed, planning }
 enum ProjectSortOption { nameAsc, nameDesc, budgetHigh, budgetLow, progressHigh, progressLow, newest, oldest }
@@ -38,8 +39,8 @@ class ProjectModel {
   final DateTime updatedAt;
   final bool isDeleted;
 
-  String get formattedBudget => _formatAmount(budget);
-  String get formattedSpent => _formatAmount(amountSpent);
+  String get formattedBudget => AppFormatters.compactCurrency(budget);
+  String get formattedSpent => AppFormatters.compactCurrency(amountSpent);
   String get progressPercent => '${(progress * 100).round()}%';
 
   static const statusLabels = {
@@ -60,11 +61,7 @@ class ProjectModel {
     ProjectSortOption.oldest:        'Oldest First',
   };
 
-  static String _formatAmount(double v) {
-    if (v >= 10000000) return '₹ ${(v / 10000000).toStringAsFixed(1)} Cr';
-    if (v >= 100000) return '₹ ${(v / 100000).toStringAsFixed(1)} L';
-    return '₹ ${v.toStringAsFixed(0)}';
-  }
+
 
   factory ProjectModel.create({
     required String name,

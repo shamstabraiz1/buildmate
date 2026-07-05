@@ -1,258 +1,104 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../core/theme/app_radius.dart';
 import '../../../../core/theme/app_spacing.dart';
-import '../../../../shared/widgets/inputs/app_text_field.dart';
 import '../../../../shared/widgets/layout/custom_app_bar.dart';
-import '../../../projects/presentation/widgets/project_form_section.dart';
-import '../../data/expenses_dummy_data.dart';
+import '../../data/models/expense_model.dart';
+import '../providers/expense_providers.dart';
+import '../widgets/add_expense_form.dart';
+import '../../../../shared/widgets/feedback/app_delete_dialog.dart';
 
-class AddExpenseScreen extends StatefulWidget {
-  const AddExpenseScreen({super.key});
+class AddExpenseScreen extends ConsumerWidget {
+  const AddExpenseScreen({this.expense, super.key});
 
-  @override
-  State<AddExpenseScreen> createState() => _AddExpenseScreenState();
-}
-
-class _AddExpenseScreenState extends State<AddExpenseScreen> {
-  final _formKey = GlobalKey<FormState>();
-
-  final _titleCtrl = TextEditingController();
-  final _amountCtrl = TextEditingController();
-  final _notesCtrl = TextEditingController();
-
-  ExpenseCategory? _selectedCategory;
-  PaymentMethod? _selectedPaymentMethod;
-
-  bool _hasReceiptAttached = false;
+  final ExpenseModel? expense;
 
   @override
-  void dispose() {
-    _titleCtrl.dispose();
-    _amountCtrl.dispose();
-    _notesCtrl.dispose();
-    super.dispose();
-  }
-
-  void _handleSave() {
-    if (!_formKey.currentState!.validate()) return;
-    if (_selectedCategory == null || _selectedPaymentMethod == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('Please complete all required dropdowns.'),
-          backgroundColor: Theme.of(context).colorScheme.error,
-        ),
-      );
-      return;
-    }
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: const Text('Expense logged successfully.'),
-        backgroundColor: Theme.of(context).colorScheme.primary,
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
-
-    Navigator.of(context).pop();
-  }
-
-  void _handleReceiptUpload() async {
-    // Mocking file upload delay
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => const Center(child: CircularProgressIndicator()),
-    );
-
-    await Future.delayed(const Duration(seconds: 1));
-
-    if (!mounted) return;
-
-    Navigator.of(context).pop(); // dismiss loading
-    setState(() {
-      _hasReceiptAttached = true;
-    });
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Receipt uploaded successfully.'),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final colorScheme = Theme.of(context).colorScheme;
+    final isDark = colorScheme.brightness == Brightness.dark;
+    final isEditing = expense != null;
 
-    return Scaffold(
-      appBar: const CustomAppBar(
-        title: 'Add Expense',
-        subtitle: 'Log a new project cost',
-      ),
-      body: SafeArea(
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 680),
-            child: Form(
-              key: _formKey,
-              autovalidateMode: AutovalidateMode.onUserInteraction,
-              child: ListView(
-                padding: const EdgeInsets.all(AppSpacing.lg),
-                children: [
-                  ProjectFormSection(
-                    title: 'Expense Details',
-                    icon: Icons.receipt_long_outlined,
-                    child: Column(
-                      children: [
-                        AppTextField(
-                          controller: _titleCtrl,
-                          labelText: 'Title / Description *',
-                          prefixIcon: const Icon(Icons.short_text_rounded),
-                          textInputAction: TextInputAction.next,
-                          validator: (v) => v == null || v.trim().isEmpty ? 'Title is required' : null,
-                        ),
-                        const SizedBox(height: AppSpacing.lg),
-                        AppTextField(
-                          controller: _amountCtrl,
-                          labelText: 'Amount (₹) *',
-                          prefixIcon: const Icon(Icons.currency_rupee_rounded),
-                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                          textInputAction: TextInputAction.next,
-                          inputFormatters: [
-                            FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}')),
-                          ],
-                          validator: (v) {
-                            if (v == null || v.trim().isEmpty) return 'Amount is required';
-                            if (double.tryParse(v) == null) return 'Enter a valid amount';
-                            return null;
-                          },
-                        ),
-                        const SizedBox(height: AppSpacing.lg),
-                        DropdownButtonFormField<ExpenseCategory>(
-                          initialValue: _selectedCategory,
-                          decoration: const InputDecoration(
-                            labelText: 'Category *',
-                            prefixIcon: Icon(Icons.category_outlined),
-                          ),
-                          items: ExpenseCategory.values.map((cat) {
-                            return DropdownMenuItem(
-                              value: cat,
-                              child: Text(ExpensesDummyData.categoryLabels[cat] ?? ''),
-                            );
-                          }).toList(),
-                          onChanged: (v) => setState(() => _selectedCategory = v),
-                          validator: (v) => v == null ? 'Category is required' : null,
-                        ),
-                      ],
-                    ),
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: isDark
+          ? SystemUiOverlayStyle.light.copyWith(
+              statusBarColor: Colors.transparent,
+            )
+          : SystemUiOverlayStyle.dark.copyWith(
+              statusBarColor: Colors.transparent,
+            ),
+      child: Scaffold(
+        appBar: CustomAppBar(
+          title: isEditing ? 'Edit Expense' : 'Add Expense',
+          subtitle: isEditing ? 'Update expense details' : 'Log a new expense record',
+          actions: isEditing
+              ? [
+                  IconButton(
+                    icon: const Icon(Icons.delete_outline),
+                    tooltip: 'Delete Expense',
+                    onPressed: () => _confirmDelete(context, ref),
                   ),
-                  const SizedBox(height: AppSpacing.xxl),
-                  ProjectFormSection(
-                    title: 'Payment Info',
-                    icon: Icons.payments_outlined,
-                    child: Column(
-                      children: [
-                        DropdownButtonFormField<PaymentMethod>(
-                          initialValue: _selectedPaymentMethod,
-                          decoration: const InputDecoration(
-                            labelText: 'Payment Method *',
-                            prefixIcon: Icon(Icons.account_balance_wallet_outlined),
-                          ),
-                          items: PaymentMethod.values.map((pm) {
-                            return DropdownMenuItem(
-                              value: pm,
-                              child: Text(ExpensesDummyData.paymentMethodLabels[pm] ?? ''),
-                            );
-                          }).toList(),
-                          onChanged: (v) => setState(() => _selectedPaymentMethod = v),
-                          validator: (v) => v == null ? 'Payment Method is required' : null,
+                ]
+              : null,
+        ),
+        body: SafeArea(
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 680),
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.lg,
+                  AppSpacing.lg,
+                  AppSpacing.lg,
+                  AppSpacing.xxxl,
+                ),
+                child: AddExpenseForm(
+                  expense: expense,
+                  onSave: (data) {
+                    if (isEditing) {
+                      final updatedExpense = expense!.copyWith(
+                        projectId: data['projectId'],
+                        categoryId: data['categoryId'],
+                        amount: data['amount'],
+                        date: data['date'],
+                        quantity: data['quantity'],
+                        unit: data['unit'],
+                        vendor: data['vendor'],
+                        paymentMethod: data['paymentMethod'],
+                        status: data['status'],
+                        notes: data['notes'],
+                      );
+                      ref.read(expensesNotifierProvider.notifier).updateExpense(updatedExpense);
+                    } else {
+                      final newExpense = ExpenseModel.create(
+                        projectId: data['projectId'],
+                        categoryId: data['categoryId'],
+                        amount: data['amount'],
+                        date: data['date'],
+                        quantity: data['quantity'],
+                        unit: data['unit'],
+                        vendor: data['vendor'],
+                        paymentMethod: data['paymentMethod'],
+                        status: data['status'],
+                        notes: data['notes'],
+                      );
+                      ref.read(expensesNotifierProvider.notifier).addExpense(newExpense);
+                    }
+
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          'Expense ${isEditing ? 'updated' : 'added'} successfully.',
                         ),
-                        const SizedBox(height: AppSpacing.lg),
-                        AppTextField(
-                          controller: _notesCtrl,
-                          labelText: 'Notes (Optional)',
-                          hintText: 'Any additional context...',
-                          prefixIcon: const Icon(Icons.notes_outlined),
-                          textInputAction: TextInputAction.done,
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.xxl),
-                  ProjectFormSection(
-                    title: 'Attachments',
-                    icon: Icons.attach_file_outlined,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        if (_hasReceiptAttached)
-                          Container(
-                            padding: const EdgeInsets.all(AppSpacing.md),
-                            decoration: BoxDecoration(
-                              color: colorScheme.successContainer,
-                              borderRadius: const BorderRadius.all(Radius.circular(AppRadius.md)),
-                              border: Border.all(color: colorScheme.success),
-                            ),
-                            child: Row(
-                              children: [
-                                Icon(Icons.check_circle_outline, color: colorScheme.onSuccessContainer),
-                                const SizedBox(width: AppSpacing.md),
-                                Expanded(
-                                  child: Text(
-                                    'Receipt Attached successfully.',
-                                    style: TextStyle(color: colorScheme.onSuccessContainer, fontWeight: FontWeight.w600),
-                                  ),
-                                ),
-                                IconButton(
-                                  icon: Icon(Icons.close, color: colorScheme.onSuccessContainer),
-                                  onPressed: () => setState(() => _hasReceiptAttached = false),
-                                  tooltip: 'Remove Receipt',
-                                ),
-                              ],
-                            ),
-                          )
-                        else
-                          OutlinedButton.icon(
-                            onPressed: _handleReceiptUpload,
-                            icon: const Icon(Icons.camera_alt_outlined),
-                            label: const Text('Upload Receipt / Bill'),
-                            style: OutlinedButton.styleFrom(
-                              minimumSize: const Size.fromHeight(80),
-                              shape: const RoundedRectangleBorder(
-                                borderRadius: BorderRadius.all(Radius.circular(AppRadius.md)),
-                              ),
-                              side: BorderSide(
-                                color: colorScheme.primary.withValues(alpha: 0.5),
-                                width: 2,
-                                style: BorderStyle.solid,
-                              ),
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.xxxl),
-                  FilledButton.icon(
-                    onPressed: _handleSave,
-                    icon: const Icon(Icons.check_circle_outline_rounded),
-                    label: const Text('Save Expense'),
-                    style: FilledButton.styleFrom(
-                      minimumSize: const Size.fromHeight(AppSpacing.controlHeight),
-                      shape: const StadiumBorder(),
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.md),
-                  OutlinedButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    style: OutlinedButton.styleFrom(
-                      minimumSize: const Size.fromHeight(AppSpacing.controlHeight),
-                      shape: const StadiumBorder(),
-                    ),
-                    child: const Text('Cancel'),
-                  ),
-                ],
+                        backgroundColor: colorScheme.primary,
+                        behavior: SnackBarBehavior.floating,
+                      ),
+                    );
+                    Navigator.of(context).pop();
+                  },
+                  onCancel: () => Navigator.of(context).pop(),
+                ),
               ),
             ),
           ),
@@ -260,10 +106,19 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
       ),
     );
   }
-}
 
-extension on ColorScheme {
-  Color get successContainer => const Color(0xFFCEEAD6);
-  Color get onSuccessContainer => const Color(0xFF0D652D);
-  Color get success => const Color(0xFF1E8E3E);
+  Future<void> _confirmDelete(BuildContext context, WidgetRef ref) async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (_) => const AppDeleteDialog(
+        title: 'Delete Expense',
+        message: 'Are you sure you want to delete this expense? This action cannot be undone.',
+      ),
+    );
+
+    if (result == true && context.mounted) {
+      ref.read(expensesNotifierProvider.notifier).deleteExpense(expense!.id);
+      Navigator.of(context).pop();
+    }
+  }
 }

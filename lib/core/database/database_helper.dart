@@ -30,10 +30,23 @@ class DatabaseHelper {
     return await databaseFactory.openDatabase(
       path,
       options: OpenDatabaseOptions(
-        version: 1,
+        version: 2,
         onCreate: _createDB,
+        onUpgrade: _upgradeDB,
       ),
     );
+  }
+
+  Future<void> _upgradeDB(Database db, int oldVersion, int newVersion) async {
+    if (oldVersion < 2) {
+      // Add new columns to expenses table
+      await db.execute('ALTER TABLE expenses ADD COLUMN quantity REAL');
+      await db.execute('ALTER TABLE expenses ADD COLUMN unit TEXT');
+      await db.execute('ALTER TABLE expenses ADD COLUMN vendor TEXT');
+      await db.execute('ALTER TABLE expenses ADD COLUMN paymentMethod TEXT NOT NULL DEFAULT "Cash"');
+      await db.execute('ALTER TABLE expenses ADD COLUMN status TEXT NOT NULL DEFAULT "Paid"');
+      await db.execute('ALTER TABLE expenses ADD COLUMN expenseNumber TEXT NOT NULL DEFAULT ""');
+    }
   }
 
   Future<void> _createDB(Database db, int version) async {
@@ -74,9 +87,15 @@ class DatabaseHelper {
       CREATE TABLE expenses (
         id $idType,
         projectId $textTypeNotNull,
+        expenseNumber $textTypeNotNull,
         categoryId $textType,
         amount $realType NOT NULL,
         date $textTypeNotNull,
+        quantity $realType,
+        unit $textType,
+        vendor $textType,
+        paymentMethod $textTypeNotNull,
+        status $textTypeNotNull,
         notes $textType,
         receiptUrl $textType,
         $standardColumns
