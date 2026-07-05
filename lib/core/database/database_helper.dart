@@ -30,7 +30,7 @@ class DatabaseHelper {
     return await databaseFactory.openDatabase(
       path,
       options: OpenDatabaseOptions(
-        version: 2,
+        version: 4,
         onCreate: _createDB,
         onUpgrade: _upgradeDB,
       ),
@@ -46,6 +46,26 @@ class DatabaseHelper {
       await db.execute('ALTER TABLE expenses ADD COLUMN paymentMethod TEXT NOT NULL DEFAULT "Cash"');
       await db.execute('ALTER TABLE expenses ADD COLUMN status TEXT NOT NULL DEFAULT "Paid"');
       await db.execute('ALTER TABLE expenses ADD COLUMN expenseNumber TEXT NOT NULL DEFAULT ""');
+    }
+    
+    if (oldVersion < 3) {
+      // Add new columns to labours table
+      await db.execute('ALTER TABLE labours ADD COLUMN status TEXT NOT NULL DEFAULT "active"');
+      await db.execute('ALTER TABLE labours ADD COLUMN cnic TEXT');
+      await db.execute('ALTER TABLE labours ADD COLUMN address TEXT');
+      await db.execute('ALTER TABLE labours ADD COLUMN overtimeRate REAL');
+      await db.execute('ALTER TABLE labours ADD COLUMN photoUrl TEXT');
+      await db.execute('ALTER TABLE labours ADD COLUMN emergencyContactName TEXT');
+      await db.execute('ALTER TABLE labours ADD COLUMN emergencyContactPhone TEXT');
+      
+      // Add new columns to attendance table
+      await db.execute('ALTER TABLE attendance ADD COLUMN overtimeHours REAL NOT NULL DEFAULT 0.0');
+    }
+
+    if (oldVersion < 4) {
+      await db.execute('ALTER TABLE labours ADD COLUMN imagePath TEXT');
+      await db.execute('ALTER TABLE labours ADD COLUMN customRole TEXT');
+      await db.execute('ALTER TABLE labours ADD COLUMN notes TEXT');
     }
   }
 
@@ -110,6 +130,13 @@ class DatabaseHelper {
         role $textTypeNotNull,
         dailyRate $realType NOT NULL,
         phone $textType,
+        status $textTypeNotNull,
+        cnic $textType,
+        address $textType,
+        overtimeRate $realType,
+        imagePath $textType,
+        customRole $textType,
+        notes $textType,
         $standardColumns
       )
     ''');
@@ -122,6 +149,7 @@ class DatabaseHelper {
         labourId $textTypeNotNull,
         date $textTypeNotNull,
         status $textTypeNotNull,
+        overtimeHours $realType NOT NULL,
         $standardColumns
       )
     ''');

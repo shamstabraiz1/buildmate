@@ -3,7 +3,8 @@ import 'package:flutter/material.dart';
 import '../../../../core/theme/app_radius.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../shared/widgets/display/status_chip.dart';
-import '../../data/labour_dummy_data.dart';
+import '../../../../shared/widgets/display/local_image_display.dart';
+import '../../data/models/labour_model.dart';
 
 /// Card displaying basic labour information in a list.
 class LabourCard extends StatelessWidget {
@@ -63,13 +64,16 @@ class LabourCard extends StatelessWidget {
                   shape: BoxShape.circle,
                 ),
                 alignment: Alignment.center,
-                child: Text(
-                  labour.initials,
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w700,
-                    color: colorScheme.onPrimaryContainer,
-                  ),
-                ),
+                clipBehavior: Clip.antiAlias,
+                child: labour.imagePath != null
+                    ? LocalImageDisplay(imagePath: labour.imagePath!, width: 48, height: 48)
+                    : Text(
+                        labour.initials,
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w700,
+                          color: colorScheme.onPrimaryContainer,
+                        ),
+                      ),
               ),
               const SizedBox(width: AppSpacing.md),
 
@@ -100,7 +104,7 @@ class LabourCard extends StatelessWidget {
                     ),
                     const SizedBox(height: AppSpacing.xxs),
                     Text(
-                      LabourDummyData.roleLabels[labour.role] ?? '',
+                      labour.role == LabourRole.custom ? (labour.customRole ?? 'Custom') : (LabourModel.roleLabels[labour.role] ?? ''),
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: colorScheme.primary,
                         fontWeight: FontWeight.w600,

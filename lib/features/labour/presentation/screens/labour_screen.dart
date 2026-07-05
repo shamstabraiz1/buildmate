@@ -1,25 +1,28 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/theme/app_radius.dart';
 import '../../../../core/theme/app_spacing.dart';
+import '../../../../shared/widgets/feedback/app_loading_indicator.dart';
 import '../../../../shared/widgets/feedback/empty_state_widget.dart';
 import '../../../../shared/widgets/inputs/app_search_bar.dart';
 import '../../../../shared/widgets/layout/custom_app_bar.dart';
-import '../../data/labour_dummy_data.dart';
+import '../../data/models/labour_model.dart';
+import '../providers/labour_providers.dart';
 import '../widgets/labour_card.dart';
 import 'add_labour_screen.dart';
 import 'labour_details_screen.dart';
 
 /// Screen displaying the list of all labour workers.
-class LabourScreen extends StatefulWidget {
+class LabourScreen extends ConsumerStatefulWidget {
   const LabourScreen({super.key});
 
   @override
-  State<LabourScreen> createState() => _LabourScreenState();
+  ConsumerState<LabourScreen> createState() => _LabourScreenState();
 }
 
-class _LabourScreenState extends State<LabourScreen> {
+class _LabourScreenState extends ConsumerState<LabourScreen> {
   final _searchController = TextEditingController();
   String _searchQuery = '';
   LabourRole? _selectedRole;
@@ -30,11 +33,12 @@ class _LabourScreenState extends State<LabourScreen> {
     super.dispose();
   }
 
-  List<LabourModel> get _filteredWorkers {
-    return LabourDummyData.workers.where((w) {
+  List<LabourModel> _getFilteredWorkers(List<LabourModel> workers) {
+    return workers.where((w) {
       final matchesSearch = w.name.toLowerCase().contains(_searchQuery.toLowerCase()) ||
           w.phone.contains(_searchQuery) ||
-          (LabourDummyData.roleLabels[w.role]?.toLowerCase().contains(_searchQuery.toLowerCase()) ?? false);
+          (LabourModel.roleLabels[w.role]?.toLowerCase().contains(_searchQuery.toLowerCase()) ?? false) ||
+          (w.customRole?.toLowerCase().contains(_searchQuery.toLowerCase()) ?? false);
       final matchesRole = _selectedRole == null || w.role == _selectedRole;
       return matchesSearch && matchesRole;
     }).toList();
@@ -44,7 +48,7 @@ class _LabourScreenState extends State<LabourScreen> {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final isDark = colorScheme.brightness == Brightness.dark;
-    final workers = _filteredWorkers;
+    final laboursState = ref.watch(laboursNotifierProvider);
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: isDark
@@ -82,7 +86,7 @@ class _LabourScreenState extends State<LabourScreen> {
                         children: [
                           _buildFilterChip('All', null),
                           ...LabourRole.values.map((role) {
-                            return _buildFilterChip(LabourDummyData.roleLabels[role] ?? '', role);
+                            return _buildFilterChip(LabourModel.roleLabels[role] ?? '', role);
                           }),
                         ],
                       ),
@@ -94,9 +98,13 @@ class _LabourScreenState extends State<LabourScreen> {
             
             // List View
             Expanded(
-              child: workers.isEmpty
-                  ? EmptyStateWidget(
-                      icon: const Icon(Icons.people_alt_outlined),
+              child: laboursState.when(
+                data: (labours) {
+                  final filteredList = _getFilteredWorkers(labours);
+                  
+                  if (filteredList.isEmpty) {
+                    return EmptyStateWidget(
+                      icon: const Icon(Icons.people_alt_outlined, size: 64),
                       title: 'No workers found',
                       message: 'Try adjusting your search or filters.',
                       actionLabel: _searchQuery.isNotEmpty || _selectedRole != null ? 'Clear Filters' : null,
@@ -107,25 +115,36 @@ class _LabourScreenState extends State<LabourScreen> {
                           _selectedRole = null;
                         });
                       },
-                    )
-                  : ListView.separated(
-                      padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.md, AppSpacing.lg, AppSpacing.xxxl + AppSpacing.xxl),
-                      itemCount: workers.length,
-                      separatorBuilder: (_, _) => const SizedBox(height: AppSpacing.md),
-                      itemBuilder: (context, index) {
-                        final worker = workers[index];
-                        return LabourCard(
-                          labour: worker,
-                          onTap: () {
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (_) => LabourDetailsScreen(labourId: worker.id),
-                              ),
-                            );
-                          },
-                        );
-                      },
-                    ),
+                    );
+                  }
+
+                  return ListView.separated(
+                    padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.md, AppSpacing.lg, AppSpacing.xxxl + AppSpacing.xxl),
+                    itemCount: filteredList.length,
+                    separatorBuilder: (context, index) => const SizedBox(height: AppSpacing.md),
+                    itemBuilder: (context, index) {
+                      final worker = filteredList[index];
+                      return LabourCard(
+                        labour: worker,
+                        onTap: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => LabourDetailsScreen(labourId: worker.id),
+                            ),
+                          );
+                        },
+                      );
+                    },
+                  );
+                },
+                loading: () => const Center(child: AppLoadingIndicator()),
+                error: (error, stack) => Center(
+                  child: Text(
+                    'Error: $error',
+                    style: TextStyle(color: Theme.of(context).colorScheme.error),
+                  ),
+                ),
+              ),
             ),
           ],
         ),
