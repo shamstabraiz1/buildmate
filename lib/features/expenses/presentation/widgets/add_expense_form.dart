@@ -15,12 +15,14 @@ class AddExpenseForm extends ConsumerStatefulWidget {
     required this.onSave,
     required this.onCancel,
     this.expense,
+    this.initialProjectId,
     super.key,
   });
 
   final ValueChanged<Map<String, dynamic>> onSave;
   final VoidCallback onCancel;
   final ExpenseModel? expense;
+  final String? initialProjectId;
 
   @override
   ConsumerState<AddExpenseForm> createState() => _AddExpenseFormState();
@@ -54,7 +56,7 @@ class _AddExpenseFormState extends ConsumerState<AddExpenseForm> {
     _vendorCtrl = TextEditingController(text: e?.vendor ?? '');
     _notesCtrl = TextEditingController(text: e?.notes ?? '');
     
-    _selectedProjectId = e?.projectId;
+    _selectedProjectId = e?.projectId ?? widget.initialProjectId;
     _selectedPaymentMethod = e?.paymentMethod ?? PaymentMethod.cash;
     _selectedStatus = e?.status ?? ExpenseStatus.paid;
     _date = e?.date ?? DateTime.now();

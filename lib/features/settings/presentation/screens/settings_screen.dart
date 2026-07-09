@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../shared/widgets/layout/custom_app_bar.dart';
+import '../../../dashboard/presentation/widgets/dashboard_bottom_nav.dart';
 import '../widgets/settings_section.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -187,6 +188,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           const SizedBox(height: AppSpacing.xxxl),
         ],
+      ),
+      bottomNavigationBar: const DashboardBottomNav(
+        selectedDestination: DashboardNavDestination.settings,
       ),
     );
   }

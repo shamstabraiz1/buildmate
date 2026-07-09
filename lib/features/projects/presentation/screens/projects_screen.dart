@@ -12,6 +12,7 @@ import '../../data/models/project_model.dart';
 import '../providers/project_providers.dart';
 import '../widgets/project_card.dart';
 import '../widgets/projects_filter_bar.dart';
+import '../../../dashboard/presentation/widgets/dashboard_bottom_nav.dart';
 import 'add_project_screen.dart';
 import 'project_details_screen.dart';
 
@@ -133,6 +134,9 @@ class _ProjectsScreenState extends ConsumerState<ProjectsScreen> {
             if (asyncProjects.hasValue)
               _ProjectStatsButton(projects: asyncProjects.value!),
           ],
+        ),
+        bottomNavigationBar: const DashboardBottomNav(
+          selectedDestination: DashboardNavDestination.projects,
         ),
         body: asyncProjects.when(
           loading: () => const Center(child: CircularProgressIndicator()),

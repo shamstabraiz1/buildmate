@@ -10,9 +10,10 @@ import '../widgets/add_expense_form.dart';
 import '../../../../shared/widgets/feedback/app_delete_dialog.dart';
 
 class AddExpenseScreen extends ConsumerWidget {
-  const AddExpenseScreen({this.expense, super.key});
+  const AddExpenseScreen({this.expense, this.initialProjectId, super.key});
 
   final ExpenseModel? expense;
+  final String? initialProjectId;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -55,6 +56,7 @@ class AddExpenseScreen extends ConsumerWidget {
                 ),
                 child: AddExpenseForm(
                   expense: expense,
+                  initialProjectId: initialProjectId,
                   onSave: (data) {
                     if (isEditing) {
                       final updatedExpense = expense!.copyWith(

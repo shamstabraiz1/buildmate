@@ -128,9 +128,9 @@ class DashboardDummyData {
       subtitle: 'Log cost',
     ),
     QuickActionData(
-      label: 'Labour Payment',
+      label: 'Payments',
       icon: Icons.payments_rounded,
-      subtitle: 'Pay worker',
+      subtitle: 'Manage payments',
     ),
     QuickActionData(
       label: 'Add Material',

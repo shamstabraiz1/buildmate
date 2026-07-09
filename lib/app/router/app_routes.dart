@@ -10,6 +10,13 @@ class AppRoutes {
   static const expenses = '/expenses';
   static const labour = '/labour';
   static const materials = '/materials';
+  static const materialDetails = '/materials/:materialId';
+  static const addMaterial = '/materials/add';
+  static const vendors = '/vendors';
+  static const addVendor = '/vendors/add';
+  static const payments = '/payments';
+  static const addPayment = '/payments/add';
+  static const paymentDetails = '/payments/:paymentId';
   static const reports = '/reports';
   static const settings = '/settings';
 }
@@ -26,6 +33,13 @@ class AppRouteNames {
   static const expenses = 'expenses';
   static const labour = 'labour';
   static const materials = 'materials';
+  static const materialDetails = 'materialDetails';
+  static const addMaterial = 'addMaterial';
+  static const vendors = 'vendors';
+  static const addVendor = 'addVendor';
+  static const payments = 'payments';
+  static const addPayment = 'addPayment';
+  static const paymentDetails = 'paymentDetails';
   static const reports = 'reports';
   static const settings = 'settings';
 }

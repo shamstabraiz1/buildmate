@@ -51,18 +51,21 @@ class AttendanceNotifier extends AsyncNotifier<void> {
     final repo = ref.read(labourRepositoryProvider);
     await repo.markAttendance(attendance);
     ref.invalidate(attendanceNotifierProvider(attendance.labourId));
+    ref.invalidate(projectAttendanceProvider(attendance.projectId));
   }
 
   Future<void> updateAttendance(AttendanceModel attendance) async {
     final repo = ref.read(labourRepositoryProvider);
     await repo.updateAttendance(attendance);
     ref.invalidate(attendanceNotifierProvider(attendance.labourId));
+    ref.invalidate(projectAttendanceProvider(attendance.projectId));
   }
 
-  Future<void> deleteAttendance(String id, String labourId) async {
+  Future<void> deleteAttendance(String id, String labourId, String projectId) async {
     final repo = ref.read(labourRepositoryProvider);
     await repo.deleteAttendance(id);
     ref.invalidate(attendanceNotifierProvider(labourId));
+    ref.invalidate(projectAttendanceProvider(projectId));
   }
 }
 

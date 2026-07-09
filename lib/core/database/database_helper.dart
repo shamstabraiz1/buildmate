@@ -16,21 +16,27 @@ class DatabaseHelper {
   }
 
   Future<Database> _initDB(String filePath) async {
-    if (!kIsWeb && (defaultTargetPlatform == TargetPlatform.windows || defaultTargetPlatform == TargetPlatform.linux || defaultTargetPlatform == TargetPlatform.macOS)) {
+    if (!kIsWeb &&
+        (defaultTargetPlatform == TargetPlatform.windows ||
+            defaultTargetPlatform == TargetPlatform.linux ||
+            defaultTargetPlatform == TargetPlatform.macOS)) {
       sqfliteFfiInit();
       databaseFactory = databaseFactoryFfi;
     }
 
-    final dbPath = (!kIsWeb && (defaultTargetPlatform == TargetPlatform.android || defaultTargetPlatform == TargetPlatform.iOS))
-        ? await getDatabasesPath()
-        : (await getApplicationSupportDirectory()).path;
-        
+    final dbPath =
+        (!kIsWeb &&
+                (defaultTargetPlatform == TargetPlatform.android ||
+                    defaultTargetPlatform == TargetPlatform.iOS))
+            ? await getDatabasesPath()
+            : (await getApplicationSupportDirectory()).path;
+
     final path = join(dbPath, filePath);
 
     return await databaseFactory.openDatabase(
       path,
       options: OpenDatabaseOptions(
-        version: 4,
+        version: 7,
         onCreate: _createDB,
         onUpgrade: _upgradeDB,
       ),
@@ -38,34 +44,165 @@ class DatabaseHelper {
   }
 
   Future<void> _upgradeDB(Database db, int oldVersion, int newVersion) async {
+    // ── v1 → v2 ──────────────────────────────────────────────────────────────
     if (oldVersion < 2) {
-      // Add new columns to expenses table
       await db.execute('ALTER TABLE expenses ADD COLUMN quantity REAL');
       await db.execute('ALTER TABLE expenses ADD COLUMN unit TEXT');
       await db.execute('ALTER TABLE expenses ADD COLUMN vendor TEXT');
-      await db.execute('ALTER TABLE expenses ADD COLUMN paymentMethod TEXT NOT NULL DEFAULT "Cash"');
-      await db.execute('ALTER TABLE expenses ADD COLUMN status TEXT NOT NULL DEFAULT "Paid"');
-      await db.execute('ALTER TABLE expenses ADD COLUMN expenseNumber TEXT NOT NULL DEFAULT ""');
+      await db.execute(
+        'ALTER TABLE expenses ADD COLUMN paymentMethod TEXT NOT NULL DEFAULT "Cash"',
+      );
+      await db.execute(
+        'ALTER TABLE expenses ADD COLUMN status TEXT NOT NULL DEFAULT "Paid"',
+      );
+      await db.execute(
+        'ALTER TABLE expenses ADD COLUMN expenseNumber TEXT NOT NULL DEFAULT ""',
+      );
     }
-    
+
+    // ── v2 → v3 ──────────────────────────────────────────────────────────────
     if (oldVersion < 3) {
-      // Add new columns to labours table
-      await db.execute('ALTER TABLE labours ADD COLUMN status TEXT NOT NULL DEFAULT "active"');
+      await db.execute(
+        'ALTER TABLE labours ADD COLUMN status TEXT NOT NULL DEFAULT "active"',
+      );
       await db.execute('ALTER TABLE labours ADD COLUMN cnic TEXT');
       await db.execute('ALTER TABLE labours ADD COLUMN address TEXT');
       await db.execute('ALTER TABLE labours ADD COLUMN overtimeRate REAL');
       await db.execute('ALTER TABLE labours ADD COLUMN photoUrl TEXT');
-      await db.execute('ALTER TABLE labours ADD COLUMN emergencyContactName TEXT');
-      await db.execute('ALTER TABLE labours ADD COLUMN emergencyContactPhone TEXT');
-      
-      // Add new columns to attendance table
-      await db.execute('ALTER TABLE attendance ADD COLUMN overtimeHours REAL NOT NULL DEFAULT 0.0');
+      await db.execute(
+        'ALTER TABLE labours ADD COLUMN emergencyContactName TEXT',
+      );
+      await db.execute(
+        'ALTER TABLE labours ADD COLUMN emergencyContactPhone TEXT',
+      );
+      await db.execute(
+        'ALTER TABLE attendance ADD COLUMN overtimeHours REAL NOT NULL DEFAULT 0.0',
+      );
     }
 
+    // ── v3 → v4 ──────────────────────────────────────────────────────────────
     if (oldVersion < 4) {
       await db.execute('ALTER TABLE labours ADD COLUMN imagePath TEXT');
       await db.execute('ALTER TABLE labours ADD COLUMN customRole TEXT');
       await db.execute('ALTER TABLE labours ADD COLUMN notes TEXT');
+    }
+
+    // ── v4 → v5  (Phase 4 – Materials Management) ────────────────────────────
+    if (oldVersion < 5) {
+      // Extend materials table
+      await db.execute(
+        'ALTER TABLE materials ADD COLUMN materialNumber TEXT NOT NULL DEFAULT ""',
+      );
+      await db.execute(
+        'ALTER TABLE materials ADD COLUMN category TEXT NOT NULL DEFAULT "other"',
+      );
+      await db.execute('ALTER TABLE materials ADD COLUMN customCategory TEXT');
+      await db.execute(
+        'ALTER TABLE materials ADD COLUMN quantityPurchased REAL NOT NULL DEFAULT 0',
+      );
+      await db.execute(
+        'ALTER TABLE materials ADD COLUMN quantityUsed REAL NOT NULL DEFAULT 0',
+      );
+      await db.execute(
+        'ALTER TABLE materials ADD COLUMN reorderLevel REAL NOT NULL DEFAULT 0',
+      );
+      await db.execute(
+        'ALTER TABLE materials ADD COLUMN status TEXT NOT NULL DEFAULT "available"',
+      );
+      await db.execute('ALTER TABLE materials ADD COLUMN imagePath TEXT');
+      await db.execute('ALTER TABLE materials ADD COLUMN notes TEXT');
+
+      // Extend vendors table
+      await db.execute(
+        'ALTER TABLE vendors ADD COLUMN rating REAL NOT NULL DEFAULT 0',
+      );
+      await db.execute('ALTER TABLE vendors ADD COLUMN notes TEXT');
+
+      // Create material_transactions table
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS material_transactions (
+          id         TEXT PRIMARY KEY,
+          uuid       TEXT NOT NULL,
+          materialId TEXT NOT NULL,
+          projectId  TEXT NOT NULL,
+          vendorId   TEXT,
+          type       TEXT NOT NULL,
+          quantity   REAL NOT NULL,
+          unitPrice  REAL,
+          date       TEXT NOT NULL,
+          notes      TEXT,
+          createdAt  TEXT NOT NULL,
+          updatedAt  TEXT NOT NULL,
+          isDeleted  INTEGER NOT NULL DEFAULT 0
+        )
+      ''');
+
+      await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_mat_txn_materialId ON material_transactions(materialId)',
+      );
+      await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_mat_txn_projectId ON material_transactions(projectId)',
+      );
+    }
+
+    // ── v5 → v6  (Phase 5 – Payments Management) ─────────────────────────────
+    if (oldVersion < 6) {
+      // Extend expenses table
+      await db.execute(
+        'ALTER TABLE expenses ADD COLUMN paidAmount REAL NOT NULL DEFAULT 0',
+      );
+      await db.execute(
+        'ALTER TABLE expenses ADD COLUMN remainingBalance REAL NOT NULL DEFAULT 0',
+      );
+
+      // Extend existing payments table
+      await db.execute(
+        'ALTER TABLE payments ADD COLUMN paymentNumber TEXT NOT NULL DEFAULT ""',
+      );
+      await db.execute(
+        'ALTER TABLE payments ADD COLUMN paidAmount REAL NOT NULL DEFAULT 0',
+      );
+      await db.execute(
+        'ALTER TABLE payments ADD COLUMN remainingBalance REAL NOT NULL DEFAULT 0',
+      );
+      await db.execute('ALTER TABLE payments ADD COLUMN dueDate TEXT');
+      await db.execute(
+        'ALTER TABLE payments ADD COLUMN status TEXT NOT NULL DEFAULT "Pending"',
+      );
+      await db.execute('ALTER TABLE payments ADD COLUMN invoiceNumber TEXT');
+      await db.execute('ALTER TABLE payments ADD COLUMN receiptPath TEXT');
+      await db.execute('ALTER TABLE payments ADD COLUMN notes TEXT');
+      await db.execute('ALTER TABLE payments ADD COLUMN installments TEXT');
+
+      await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_pay_projectId ON payments(projectId)',
+      );
+      await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_pay_payeeId ON payments(payeeId)',
+      );
+    }
+
+    // ── v6 → v7  (Phase 7 – Payment History) ─────────────────────────────────
+    if (oldVersion < 7) {
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS payment_history (
+          id            TEXT PRIMARY KEY,
+          uuid          TEXT NOT NULL,
+          paymentId     TEXT NOT NULL,
+          amount        REAL NOT NULL,
+          paymentDate   TEXT NOT NULL,
+          paymentMethod TEXT NOT NULL,
+          notes         TEXT,
+          createdAt     TEXT NOT NULL,
+          updatedAt     TEXT NOT NULL,
+          isDeleted     INTEGER NOT NULL DEFAULT 0
+        )
+      ''');
+      await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_payhist_paymentId ON payment_history(paymentId)',
+      );
+      // Note: We leave installments TEXT intact in the payments table to avoid data loss, 
+      // but it will be gracefully ignored in the new architecture.
     }
   }
 
@@ -116,6 +253,8 @@ class DatabaseHelper {
         vendor $textType,
         paymentMethod $textTypeNotNull,
         status $textTypeNotNull,
+        paidAmount $realType NOT NULL DEFAULT 0,
+        remainingBalance $realType NOT NULL DEFAULT 0,
         notes $textType,
         receiptUrl $textType,
         $standardColumns
@@ -154,53 +293,118 @@ class DatabaseHelper {
       )
     ''');
 
-    // 5. Materials Table
+    // 5. Materials Table (v5 — full schema)
     await db.execute('''
       CREATE TABLE materials (
-        id $idType,
-        projectId $textTypeNotNull,
-        name $textTypeNotNull,
-        quantity $realType NOT NULL,
-        unit $textTypeNotNull,
-        unitPrice $realType NOT NULL,
-        vendorId $textType,
+        id               $idType,
+        materialNumber   $textTypeNotNull,
+        name             $textTypeNotNull,
+        category         $textTypeNotNull,
+        customCategory   $textType,
+        projectId        $textType,
+        vendorId         $textType,
+        unit             $textTypeNotNull,
+        unitPrice        $realType NOT NULL,
+        quantityPurchased $realType NOT NULL DEFAULT 0,
+        quantityUsed     $realType NOT NULL DEFAULT 0,
+        reorderLevel     $realType NOT NULL DEFAULT 0,
+        status           $textTypeNotNull,
+        imagePath        $textType,
+        notes            $textType,
         $standardColumns
       )
     ''');
 
-    // 6. Vendors Table
+    // 6. Material Transactions Table (v5 — new)
+    await db.execute('''
+      CREATE TABLE material_transactions (
+        id         $idType,
+        materialId $textTypeNotNull,
+        projectId  $textTypeNotNull,
+        vendorId   $textType,
+        type       $textTypeNotNull,
+        quantity   $realType NOT NULL,
+        unitPrice  $realType,
+        date       $textTypeNotNull,
+        notes      $textType,
+        $standardColumns
+      )
+    ''');
+
+    await db.execute(
+      'CREATE INDEX IF NOT EXISTS idx_mat_txn_materialId ON material_transactions(materialId)',
+    );
+    await db.execute(
+      'CREATE INDEX IF NOT EXISTS idx_mat_txn_projectId ON material_transactions(projectId)',
+    );
+
+    // 7. Vendors Table (v5 — full schema)
     await db.execute('''
       CREATE TABLE vendors (
-        id $idType,
-        name $textTypeNotNull,
+        id            $idType,
+        name          $textTypeNotNull,
         contactPerson $textType,
-        phone $textType,
-        email $textType,
-        address $textType,
+        phone         $textType,
+        email         $textType,
+        address       $textType,
+        rating        $realType NOT NULL DEFAULT 0,
+        notes         $textType,
         $standardColumns
       )
     ''');
 
-    // 7. Payments Table
+    // 8. Payments Table
     await db.execute('''
       CREATE TABLE payments (
-        id $idType,
-        projectId $textTypeNotNull,
-        payeeId $textTypeNotNull,
-        payeeType $textTypeNotNull,
-        amount $realType NOT NULL,
-        date $textTypeNotNull,
-        paymentMethod $textTypeNotNull,
+        id              $idType,
+        paymentNumber   $textTypeNotNull,
+        projectId       $textTypeNotNull,
+        payeeId         $textTypeNotNull,
+        payeeType       $textTypeNotNull,
+        amount          $realType NOT NULL,
+        paidAmount      $realType NOT NULL DEFAULT 0,
+        remainingBalance $realType NOT NULL DEFAULT 0,
+        date            $textTypeNotNull,
+        dueDate         $textType,
+        paymentMethod   $textTypeNotNull,
+        status          $textTypeNotNull,
         referenceNumber $textType,
+        invoiceNumber   $textType,
+        receiptPath     $textType,
+        notes           $textType,
+        installments    $textType,
         $standardColumns
       )
     ''');
 
-    // 8. Settings Table
+    await db.execute(
+      'CREATE INDEX IF NOT EXISTS idx_pay_projectId ON payments(projectId)',
+    );
+    await db.execute(
+      'CREATE INDEX IF NOT EXISTS idx_pay_payeeId ON payments(payeeId)',
+    );
+
+    // 8.1 Payment History Table
+    await db.execute('''
+      CREATE TABLE payment_history (
+        id            $idType,
+        paymentId     $textTypeNotNull,
+        amount        $realType NOT NULL,
+        paymentDate   $textTypeNotNull,
+        paymentMethod $textTypeNotNull,
+        notes         $textType,
+        $standardColumns
+      )
+    ''');
+    await db.execute(
+      'CREATE INDEX IF NOT EXISTS idx_payhist_paymentId ON payment_history(paymentId)',
+    );
+
+    // 9. Settings Table
     await db.execute('''
       CREATE TABLE settings (
-        id $idType,
-        key $textTypeNotNull UNIQUE,
+        id    $idType,
+        key   $textTypeNotNull UNIQUE,
         value $textTypeNotNull,
         $standardColumns
       )

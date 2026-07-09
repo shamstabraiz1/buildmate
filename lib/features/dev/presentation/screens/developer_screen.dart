@@ -22,6 +22,7 @@ class DeveloperScreen extends StatelessWidget {
           _buildNavButton(context, 'Projects', AppRoutes.projects),
           _buildNavButton(context, 'Project Details (Dummy ID)', AppRoutes.projectDetails.replaceFirst(':projectId', 'dummy_123')),
           _buildNavButton(context, 'Expenses', AppRoutes.expenses),
+          _buildNavButton(context, 'Payments', AppRoutes.payments),
           _buildNavButton(context, 'Labour', AppRoutes.labour),
           _buildNavButton(context, 'Materials', AppRoutes.materials),
           _buildNavButton(context, 'Reports', AppRoutes.reports),

@@ -9,6 +9,11 @@ import '../providers/project_providers.dart';
 import '../widgets/project_tabs.dart';
 import 'add_project_screen.dart';
 
+import '../../../expenses/presentation/screens/add_expense_screen.dart';
+import '../../../materials/presentation/screens/add_material_screen.dart';
+import '../../../payments/presentation/screens/add_payment_screen.dart';
+import '../../../labour/presentation/screens/labour_screen.dart';
+
 /// Screen to view the details of a specific project.
 ///
 /// Uses [ProjectTabs] to display the project's summary, expenses,
@@ -64,6 +69,56 @@ class ProjectDetailsScreen extends ConsumerWidget {
                   ),
                 );
               },
+            ),
+            PopupMenuButton<String>(
+              icon: const Icon(Icons.add_circle_outline),
+              tooltip: 'Quick Actions',
+              onSelected: (value) {
+                if (value == 'expense') {
+                  Navigator.of(context).push(MaterialPageRoute(builder: (_) => AddExpenseScreen(initialProjectId: project.id)));
+                } else if (value == 'material') {
+                  Navigator.of(context).push(MaterialPageRoute(builder: (_) => AddMaterialScreen(initialProjectId: project.id)));
+                } else if (value == 'payment') {
+                  Navigator.of(context).push(MaterialPageRoute(builder: (_) => AddPaymentScreen(initialProjectId: project.id)));
+                } else if (value == 'labour') {
+                  // Labour is added through Labour module directly or attendance
+                  Navigator.of(context).push(MaterialPageRoute(builder: (_) => const LabourScreen()));
+                }
+              },
+              itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
+                const PopupMenuItem<String>(
+                  value: 'expense',
+                  child: ListTile(
+                    leading: Icon(Icons.receipt_long_outlined),
+                    title: Text('Add Expense'),
+                    contentPadding: EdgeInsets.zero,
+                  ),
+                ),
+                const PopupMenuItem<String>(
+                  value: 'material',
+                  child: ListTile(
+                    leading: Icon(Icons.inventory_2_outlined),
+                    title: Text('Add Material'),
+                    contentPadding: EdgeInsets.zero,
+                  ),
+                ),
+                const PopupMenuItem<String>(
+                  value: 'payment',
+                  child: ListTile(
+                    leading: Icon(Icons.payments_outlined),
+                    title: Text('Add Payment'),
+                    contentPadding: EdgeInsets.zero,
+                  ),
+                ),
+                const PopupMenuItem<String>(
+                  value: 'labour',
+                  child: ListTile(
+                    leading: Icon(Icons.people_alt_outlined),
+                    title: Text('Manage Labour'),
+                    contentPadding: EdgeInsets.zero,
+                  ),
+                ),
+              ],
             ),
           ],
         ),

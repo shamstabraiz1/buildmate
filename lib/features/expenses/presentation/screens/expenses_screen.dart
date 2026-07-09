@@ -11,6 +11,7 @@ import '../../../projects/presentation/providers/project_providers.dart';
 import '../providers/expense_providers.dart';
 import '../widgets/expense_card.dart';
 import '../../data/models/expense_model.dart';
+import '../../../dashboard/presentation/widgets/dashboard_bottom_nav.dart';
 import 'add_expense_screen.dart';
 
 class ExpensesScreen extends ConsumerStatefulWidget {
@@ -51,6 +52,9 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
               tooltip: 'Sort Expenses',
             ),
           ],
+        ),
+        bottomNavigationBar: const DashboardBottomNav(
+          selectedDestination: DashboardNavDestination.expenses,
         ),
         floatingActionButton: FloatingActionButton(
           onPressed: () {

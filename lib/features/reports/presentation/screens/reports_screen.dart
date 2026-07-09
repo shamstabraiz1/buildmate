@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../shared/widgets/layout/custom_app_bar.dart';
+import '../../../dashboard/presentation/widgets/dashboard_bottom_nav.dart';
 
 import '../widgets/daily_report_view.dart';
 import '../widgets/monthly_report_view.dart';
@@ -99,6 +100,9 @@ class _ReportsScreenState extends State<ReportsScreen> with SingleTickerProvider
             ),
           ),
         ],
+      ),
+      bottomNavigationBar: const DashboardBottomNav(
+        selectedDestination: DashboardNavDestination.reports,
       ),
     );
   }

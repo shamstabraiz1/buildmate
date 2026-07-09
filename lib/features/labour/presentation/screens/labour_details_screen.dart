@@ -5,6 +5,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_radius.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/utils/app_formatters.dart';
+import '../../../projects/presentation/providers/project_providers.dart';
 import '../../../../shared/widgets/feedback/app_loading_indicator.dart';
 import '../../../../shared/widgets/feedback/empty_state_widget.dart';
 import '../../../../shared/widgets/layout/custom_app_bar.dart';
@@ -330,8 +331,18 @@ class _AttendanceTab extends ConsumerStatefulWidget {
 
 class _AttendanceTabState extends ConsumerState<_AttendanceTab> {
   Future<void> _showMarkAttendanceDialog() async {
+    final projects = await ref.read(projectsNotifierProvider.future);
+    
+    if (!mounted) return;
+    
     DateTime selectedDate = DateTime.now();
     AttendanceStatus selectedStatus = AttendanceStatus.present;
+    String? selectedProjectId;
+    
+    if (projects.isNotEmpty) {
+      selectedProjectId = projects.first.id;
+    }
+    
     final otCtrl = TextEditingController();
 
     await showDialog(
@@ -345,6 +356,24 @@ class _AttendanceTabState extends ConsumerState<_AttendanceTab> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
+                    if (projects.isEmpty)
+                      const Padding(
+                        padding: EdgeInsets.only(bottom: AppSpacing.md),
+                        child: Text('No projects available. Please create a project first.', style: TextStyle(color: Colors.red)),
+                      )
+                    else
+                      DropdownButtonFormField<String>(
+                        initialValue: selectedProjectId,
+                        decoration: const InputDecoration(labelText: 'Project'),
+                        items: projects.map((p) {
+                          return DropdownMenuItem(
+                            value: p.id,
+                            child: Text(p.name),
+                          );
+                        }).toList(),
+                        onChanged: (v) => setState(() => selectedProjectId = v),
+                      ),
+                    const SizedBox(height: AppSpacing.md),
                     // Date Picker (Mocked as button for simplicity, can use showDatePicker)
                     ListTile(
                       contentPadding: EdgeInsets.zero,
@@ -388,10 +417,10 @@ class _AttendanceTabState extends ConsumerState<_AttendanceTab> {
               actions: [
                 TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
                 FilledButton(
-                  onPressed: () async {
+                  onPressed: selectedProjectId == null ? null : () async {
                     final ot = double.tryParse(otCtrl.text) ?? 0.0;
                     final att = AttendanceModel.create(
-                      projectId: 'general', // You could let the user select a project here
+                      projectId: selectedProjectId!,
                       labourId: widget.labour.id,
                       date: selectedDate,
                       status: selectedStatus,
@@ -496,7 +525,7 @@ class _AttendanceTabState extends ConsumerState<_AttendanceTab> {
                         ),
                       );
                       if (confirm == true) {
-                        await ref.read(attendanceMutationProvider.notifier).deleteAttendance(record.id, widget.labour.id);
+                        await ref.read(attendanceMutationProvider.notifier).deleteAttendance(record.id, widget.labour.id, record.projectId);
                       }
                     },
                   );

@@ -4,6 +4,8 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_radius.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../data/models/project_model.dart';
+import '../providers/project_stats_provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// Displays the top-level financial summary and progress of a project.
 ///
@@ -12,7 +14,7 @@ import '../../data/models/project_model.dart';
 /// - Amount Spent
 /// - Amount Remaining
 /// - Circular/Linear Progress Bar
-class ProjectSummaryCard extends StatelessWidget {
+class ProjectSummaryCard extends ConsumerWidget {
   const ProjectSummaryCard({
     required this.project,
     super.key,
@@ -27,13 +29,21 @@ class ProjectSummaryCard extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final colorScheme = Theme.of(context).colorScheme;
     final theme = Theme.of(context);
     final isDark = colorScheme.brightness == Brightness.dark;
 
-    final remaining = project.budget - project.amountSpent;
-    final isOverBudget = remaining < 0;
+    final statsAsync = ref.watch(projectStatsProvider(project.id));
+
+    return statsAsync.when(
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (e, s) => Center(child: Text('Error: $e')),
+      data: (stats) {
+        final spent = stats.totalProjectCost;
+        final remaining = project.budget - spent;
+        final isOverBudget = remaining < 0;
+        final progress = project.budget > 0 ? (spent / project.budget) : 0.0;
 
     return Container(
       padding: const EdgeInsets.all(AppSpacing.lg),
@@ -92,7 +102,7 @@ class ProjectSummaryCard extends StatelessWidget {
                       child: _buildMetric(
                         context,
                         label: 'Amount Spent',
-                        value: project.formattedSpent,
+                        value: _formatCurrency(spent),
                         icon: Icons.receipt_long_outlined,
                         color: AppColors.cautionAmber,
                       ),
@@ -130,7 +140,7 @@ class ProjectSummaryCard extends StatelessWidget {
                         child: _buildMetric(
                           context,
                           label: 'Amount Spent',
-                          value: project.formattedSpent,
+                          value: _formatCurrency(spent),
                           icon: Icons.receipt_long_outlined,
                           color: AppColors.cautionAmber,
                         ),
@@ -151,9 +161,11 @@ class ProjectSummaryCard extends StatelessWidget {
             },
           ),
           const SizedBox(height: AppSpacing.xl),
-          _buildProgressBar(context, colorScheme, isOverBudget),
+          _buildProgressBar(context, colorScheme, isOverBudget, progress),
         ],
       ),
+    );
+      },
     );
   }
 
@@ -226,8 +238,8 @@ class ProjectSummaryCard extends StatelessWidget {
     );
   }
 
-  Widget _buildProgressBar(BuildContext context, ColorScheme colorScheme, bool isOverBudget) {
-    final progress = project.progress.clamp(0.0, 1.0);
+  Widget _buildProgressBar(BuildContext context, ColorScheme colorScheme, bool isOverBudget, double progressValue) {
+    final progress = progressValue.clamp(0.0, 1.0);
     final barColor = isOverBudget ? AppColors.dangerRed : colorScheme.primary;
 
     return Column(

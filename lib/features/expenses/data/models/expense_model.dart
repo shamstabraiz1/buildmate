@@ -13,6 +13,8 @@ class ExpenseModel {
     required this.expenseNumber,
     required this.categoryId,
     required this.amount,
+    required this.paidAmount,
+    required this.remainingBalance,
     required this.date,
     this.quantity,
     this.unit,
@@ -32,6 +34,8 @@ class ExpenseModel {
   final String expenseNumber;
   final String categoryId; // Predefined or custom string
   final double amount;
+  final double paidAmount;
+  final double remainingBalance;
   final DateTime date;
   
   final double? quantity;
@@ -74,6 +78,7 @@ class ExpenseModel {
     required String projectId,
     required String categoryId,
     required double amount,
+    double paidAmount = 0,
     required DateTime date,
     double? quantity,
     String? unit,
@@ -95,6 +100,8 @@ class ExpenseModel {
       expenseNumber: expenseNum,
       categoryId: categoryId,
       amount: amount,
+      paidAmount: paidAmount,
+      remainingBalance: amount - paidAmount,
       date: date,
       quantity: quantity,
       unit: unit,
@@ -113,6 +120,8 @@ class ExpenseModel {
     String? projectId,
     String? categoryId,
     double? amount,
+    double? paidAmount,
+    double? remainingBalance,
     DateTime? date,
     double? quantity,
     String? unit,
@@ -130,6 +139,8 @@ class ExpenseModel {
       expenseNumber: expenseNumber,
       categoryId: categoryId ?? this.categoryId,
       amount: amount ?? this.amount,
+      paidAmount: paidAmount ?? this.paidAmount,
+      remainingBalance: remainingBalance ?? this.remainingBalance,
       date: date ?? this.date,
       quantity: quantity ?? this.quantity,
       unit: unit ?? this.unit,
@@ -152,6 +163,8 @@ class ExpenseModel {
       'expenseNumber': expenseNumber,
       'categoryId': categoryId,
       'amount': amount,
+      'paidAmount': paidAmount,
+      'remainingBalance': remainingBalance,
       'date': date.toIso8601String(),
       'quantity': quantity,
       'unit': unit,
@@ -174,6 +187,8 @@ class ExpenseModel {
       expenseNumber: map['expenseNumber'] as String? ?? '',
       categoryId: map['categoryId'] as String? ?? '',
       amount: (map['amount'] as num).toDouble(),
+      paidAmount: (map['paidAmount'] as num?)?.toDouble() ?? 0.0,
+      remainingBalance: (map['remainingBalance'] as num?)?.toDouble() ?? 0.0,
       date: DateTime.parse(map['date'] as String),
       quantity: map['quantity'] != null ? (map['quantity'] as num).toDouble() : null,
       unit: map['unit'] as String?,

@@ -33,7 +33,7 @@ class AppTheme {
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           elevation: AppElevation.button,
-          minimumSize: const Size.fromHeight(AppSpacing.controlHeight),
+          minimumSize: const Size(0, AppSpacing.controlHeight),
           shape: const RoundedRectangleBorder(
             borderRadius: AppRadius.buttonBorder,
           ),
@@ -42,7 +42,7 @@ class AppTheme {
       ),
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
-          minimumSize: const Size.fromHeight(AppSpacing.controlHeight),
+          minimumSize: const Size(0, AppSpacing.controlHeight),
           shape: const RoundedRectangleBorder(
             borderRadius: AppRadius.buttonBorder,
           ),
@@ -51,7 +51,7 @@ class AppTheme {
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
-          minimumSize: const Size.fromHeight(AppSpacing.controlHeight),
+          minimumSize: const Size(0, AppSpacing.controlHeight),
           side: BorderSide(color: colorScheme.outline),
           shape: const RoundedRectangleBorder(
             borderRadius: AppRadius.buttonBorder,
@@ -61,7 +61,7 @@ class AppTheme {
       ),
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
-          minimumSize: const Size.fromHeight(AppSpacing.controlHeight),
+          minimumSize: const Size(0, AppSpacing.controlHeight),
           shape: const RoundedRectangleBorder(
             borderRadius: AppRadius.buttonBorder,
           ),

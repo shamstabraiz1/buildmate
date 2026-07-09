@@ -21,4 +21,8 @@ class AppFormatters {
   static String date(DateTime date) {
     return DateFormat('MMM dd, yyyy').format(date);
   }
+
+  static String dateTime(DateTime date) {
+    return DateFormat('MMM dd, yyyy · hh:mm a').format(date);
+  }
 }

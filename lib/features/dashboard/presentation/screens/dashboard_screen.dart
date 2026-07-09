@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_radius.dart';
@@ -36,13 +37,11 @@ class DashboardScreen extends StatefulWidget {
 }
 
 class _DashboardScreenState extends State<DashboardScreen> {
-  DashboardNavDestination _selectedNav = DashboardNavDestination.dashboard;
-
-  void _onNavSelected(DashboardNavDestination dest) =>
-      setState(() => _selectedNav = dest);
 
   void _onQuickAction(int index) {
-    // TODO: navigate to the respective feature
+    if (index == 1) { // Payments index
+      context.push('/payments');
+    }
   }
 
   @override
@@ -63,9 +62,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
       child: Scaffold(
         backgroundColor: colorScheme.surface,
         body: _DashboardBody(onQuickAction: _onQuickAction),
-        bottomNavigationBar: DashboardBottomNav(
-          selectedDestination: _selectedNav,
-          onDestinationSelected: _onNavSelected,
+        bottomNavigationBar: const DashboardBottomNav(
+          selectedDestination: DashboardNavDestination.dashboard,
         ),
         floatingActionButton: _DashboardFab(),
         floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
